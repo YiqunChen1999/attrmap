@@ -1,0 +1,10 @@
+# this is a yaml file for testing
+language:
+  - python
+  - cpp
+  - java
+value: [["one", "two"]]
+structure:
+  tree:
+    - "left tree"
+    - "right tree"
