@@ -1,6 +1,8 @@
 
+from collections import UserDict
 from attrmap import AttrMap
 from copy import deepcopy as dcp
+
 
 CONFIGS = {
     "attr1": 1, 
