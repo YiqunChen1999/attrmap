@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="attrmap",
-    version="0.0.1",
+    version="0.0.2",
     author="Yiqun Chen",
     author_email="yiqunchen1999@gmail.com",
     description="Attribute Mapping",
