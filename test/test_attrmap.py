@@ -44,10 +44,63 @@ def test_merge_from():
     for key in cfg_yaml.keys():
         assert key in configs.keys(), configs.keys()
 
-def test_todict():
+def test_read_only():
     configs = AttrMap(CONFIGS)
-    # CONFIGS["attr3"]["subattr1"] = "new value"
-    # assert configs.attr3.subattr1 == CONFIGS["attr3"]["subattr1"]
-    d = configs.todict()
-    d["attr1"] = "hello world"
-    assert d["attr1"] == configs.attr1
+    configs.convert_state(True)
+    assert configs.readonly
+    try:
+        configs.attr1 = "hello world"
+        assert False, configs.readonly
+    except AttributeError:
+        pass
+
+def test_str():
+    start = ""
+    configs = AttrMap(CONFIGS)
+    string = f"Object Contains Following Attributes\n" \
+             + f"{start} attr1: 1\n" \
+             + f"{start} attr2: ['hello', ' ', 'world']\n" \
+             + f"{start} attr3: \n" \
+             + f"\t{start} subattr1: subattr1\n" \
+             + f"\t{start} subattr2: \n" \
+             + f"\t\t{start} subsubattr1: subsubattr1"
+    assert string == str(configs) == repr(configs), str(configs)
+
+def test_contains():
+    configs = AttrMap(CONFIGS)
+    for key in CONFIGS.keys():
+        assert configs.contains(key), key
+
+def test_getitem():
+    configs = AttrMap(CONFIGS)
+    for key in CONFIGS.keys():
+        val = configs[key]
+        if isinstance(val, AttrMap):
+            val = val.todict()
+        assert val == CONFIGS[key], val
+
+def test_keys():
+    configs = AttrMap(CONFIGS)
+    assert sorted(configs.keys()) == sorted(list(CONFIGS.keys())),\
+        configs.keys()
+
+def test_vals():
+    configs = AttrMap(CONFIGS)
+    attr_vals = configs.values()
+    dict_vals = CONFIGS.values()
+    for attr_val, dict_val in zip(attr_vals, dict_vals):
+        if isinstance(attr_val, AttrMap):
+            attr_val = attr_val.todict()
+        assert attr_val == dict_val, attr_val
+
+def test_items():
+    configs = AttrMap(CONFIGS)
+    attr_items = configs.items()
+    dict_items = CONFIGS.items()
+    # dict_items = list(dict_items)
+    for attr_it, dict_it in zip(attr_items, dict_items):
+        assert attr_it[0] == dict_it[0], attr_it[0]
+        val = attr_it[1]
+        if isinstance(val, AttrMap):
+            val = val.todict()
+        assert val == dict_it[1], attr_it[1]

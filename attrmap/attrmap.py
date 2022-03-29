@@ -11,6 +11,8 @@ from copy import deepcopy as dcp
 
 class AttrMap(object):
     r"""
+    AttrMap behaves like a dict, but user can access values 
+    by attribute style.
     """
     def __init__(
         self, 
@@ -18,7 +20,7 @@ class AttrMap(object):
         path2file: os.PathLike=None, 
         read_only: bool=False, 
         **kwargs, 
-    ):
+    ) -> None:
         super(AttrMap, self).__init__()
         self.__dict__["ATTRMAP_LEVEL"] = 0
         self.__dict__["ATTRMAP_PREFIX"] = "_ATTRMAP_PREFIX_"
@@ -38,15 +40,15 @@ class AttrMap(object):
     def readonly(self) -> bool:
         return self.read_only
 
-    def todict(self):
+    def todict(self) -> dict:
         r"""
-        Info:
-            Convert to a python builtin dict.
+        Convert to a python builtin dict, which does not 
+        share memory with AttrMap instance.
         """
         result = {}
         for key, value in self.__dict__.items():
             value = value.todict() \
-                if isinstance(value, self.__class__) else value
+                if isinstance(value, AttrMap) else value
             if key.startswith(self._prefix):
                 new_key = key.replace(self._prefix, "")
                 result[new_key] = value
@@ -54,8 +56,7 @@ class AttrMap(object):
 
     def convert_state(self, read_only: bool=None):
         r"""
-        Info:
-            Convert the state as read only or not.
+        Convert the state as read only or not.
         """
         if read_only is None:
             read_only = not self.readonly
@@ -65,8 +66,8 @@ class AttrMap(object):
                     f"from [True, False, None], but got {read_only}"
                 )
         self.__dict__["READ_ONLY"] = read_only
-        for attr, value in self.__dict__.items():
-            if isinstance(value, self.__class__):
+        for _, value in self.__dict__.items():
+            if isinstance(value, AttrMap):
                 value.convert_state(read_only)
         return self
 
@@ -87,14 +88,14 @@ class AttrMap(object):
     def _level(self) -> int:
         return self.__dict__["ATTRMAP_LEVEL"]
 
-    def keys(self):
+    def keys(self) -> list[str]:
         keys = filter(
             lambda x: x.startswith(self._prefix), self.__dict__.keys()
         )
         keys = map(lambda x: x.replace(self._prefix, ""), keys)
         return list(keys)
 
-    def values(self):
+    def values(self) -> list[Any]:
         values = []
         for key in self.keys():
             values.append(self[key])
@@ -102,7 +103,7 @@ class AttrMap(object):
 
     vals = values
 
-    def items(self):
+    def items(self) -> Iterable:
         return zip(self.keys(), self.vals())
 
     def contains(self, name: str) -> bool:
@@ -112,7 +113,7 @@ class AttrMap(object):
         for key, value in self.__dict__.items():
             if not self._prefix in key:
                 continue
-            if isinstance(value, self.__class__):
+            if isinstance(value, AttrMap):
                 value.__dict__["ATTRMAP_LEVEL"] = self._level + 1
                 value._update_level()
 
@@ -132,7 +133,7 @@ class AttrMap(object):
                 source = yaml.safe_load(fp)
             self._build_from_dict(source)
 
-    def _wrap_name(self, name: str):
+    def _wrap_name(self, name: str) -> str:
         return f"{self._prefix}{str(name)}"
 
     def __setitem__(self, key: str, value: Any):
@@ -155,7 +156,7 @@ class AttrMap(object):
         if not self._wrap_name(key) in self.__dict__.keys():
             if self.read_only:
                 raise AttributeError("No such attribute: {}".format(key))
-            self.__dict__[self._wrap_name(key)] = self.__class__()
+            self.__dict__[self._wrap_name(key)] = AttrMap()
             self._update_level()
         return self.__dict__[self._wrap_name(key)]
 
@@ -175,7 +176,7 @@ class AttrMap(object):
         return self.contains(item)
 
     def __copy__(self):
-        target = self.__class__()
+        target = AttrMap()
         for key, value in self.__dict__.items():
             if self._prefix in key:
                 key = key.replace(self._prefix, "")
@@ -183,7 +184,7 @@ class AttrMap(object):
         return target
 
     def __deepcopy__(self, memo):
-        other = self.__class__()
+        other = AttrMap()
         for key, value in self.__dict__.items():
             if id(self) in memo:
                 continue
@@ -194,23 +195,25 @@ class AttrMap(object):
         return other
 
     def __str__(self) -> str:
-        start = "-"
+        start = ""
+        template = "{}{} {}: {}{}"
         string = []
         level = self._level
         if level == 0:
             string.append("Object Contains Following Attributes")
         for key, value in self.items():
-            substring = "{}{} {}: {}{}".format(
+            substring = template.format(
                 "\t" * self._level, 
                 start, 
                 key, 
-                "\n" if isinstance(value, self.__class__) else "", 
+                "\n" if isinstance(value, AttrMap) else "", 
                 str(value), 
             )
             string.append(substring)
         string = "\n".join(string)
         return string
 
+    __repr__ = __str__
 
 def merge_mapping(
     mapping: Union[AttrMap, dict], 
