@@ -1,4 +1,5 @@
-r"""
+
+"""
 Author:
     Yiqun Chen
 Docs:
@@ -11,9 +12,188 @@ from typing import Any, Iterable, Mapping, Union, List
 from copy import deepcopy as dcp
 
 class AttrMap(object):
-    r"""
-    AttrMap behaves like a dict, but user can access values 
-    by attribute style.
+    """
+    `attrmap` is an open source tool with read-only protection 
+    to help users get rid of dictionary in Python. AttrMap behaves 
+    like a dict, but user can access values by attribute style.
+
+    Args:
+        source: 
+            A python built-in `dict` object to be converted to 
+            `AttrMap` object.
+        path2file: 
+            The path to `.json` or `.yaml` file. 
+            The content of file will be merged to `AttrMap` object.
+        read_only: 
+            Set the `AttrMap` object to read-only after the 
+            object is built. See `read_only` property.
+        kwargs: 
+            To allow the users build an `AttrMap` object like 
+            built-in `dict()` method.
+
+    For example: Users can create an `AttrMap` object from an
+    existing python built-in object:
+
+    >>> from attrmap import AttrMap
+    >>> CONFIGS = {
+    ... "attr1": 1, 
+    ... "attr2": ["hello", " ", "world"], 
+    ... "attr3": {
+    ...     "subattr1": "subattr1", 
+    ...     "subattr2": {
+    ...         "subsubattr1": "subsubattr1",
+    ...     }
+    ... }
+    }
+    >>> configs = AttrMap(CONFIGS)
+    >>> print(configs)
+    Object Contains Following Attributes
+        attr1: 1
+        attr2: ['hello', ' ', 'world']
+        attr3:
+                subattr1: subattr1
+                subattr2:
+                        subsubattr1: subsubattr1
+
+    Users can also create from an empty `AttrMap` object:
+
+    >>> configs = AttrMap()
+    >>> configs.attr1 = 1
+    >>> configs.attr2 = ["hello", " ", "world"]
+    >>> configs.attr3.subattr1 = "subattr1"
+    >>> configs.attr3.subattr2.subsubattr2 = "subsubattr1"
+    >>> configs.attr4
+    # Get an empty line, but the attribute attr1 is created.
+    >>> type(configs.attr4)
+    <class 'attrmap.attrmap.AttrMap'>
+
+    That is, assume the `AttrMap` object is modifiable (read_only property 
+    is False), when an attribute is accessed, the object will first look
+    in the stored attributes and return the value if the attribute is stored.
+    Otherwise, the object will create an attribute with the given name, and 
+    the value is the given value (or an instance of `AttrMap` if get nothing).
+
+    A common scene of `AttrMap` is load the configuration of a system. Let's
+    assume you have a `file.json` (`.yaml` file works too) 
+    with following contents:
+
+    .. code-block:: json
+        :linenos:
+
+        {
+            "language": ["python", "cpp", "java"], 
+            "value": [["one", "two"]], 
+            "structure":{
+                "tree":["left tree", "right tree"]
+            }
+        }
+
+    Then you can create an `AttrMap` object via:
+
+    >>> configs = AttrMap(path2file="/PATH_TO_FOLDER/file.json")
+    >>> print(configs)
+    Object Contains Following Attributes
+    language: ['python', 'cpp', 'java']
+    value: [['one', 'two']]
+    structure:
+            tree: ['left tree', 'right tree']
+
+    Users can access the value of a specific attribute via attribute-style
+    or dict-style or the mixing of both:
+
+    >>> configs = AttrMap(CONFIGS)
+    >>> configs.attr1
+    1
+    >>> configs["attr1"]
+    1
+    >>> configs.convert_state(read_only=False)
+    >>> del configs.attr1
+    >>> configs.convert_state(read_only=True)
+    >>> configs.attr1
+    Traceback (most recent call last):
+    File "<stdin>", line 1, in <module>
+    File "/xxxx/attrmap.py", line xxx, in __getattr__
+        Get the (top level) `key-value` pair of `AttrMap` object like `dict`.
+    AttributeError: No such attribute: attr1
+    >>> configs.convert_state(read_only=False)
+    >>> configs.attr1
+    # Get an empty line, but the attribute attr1 is created.
+    >>> type(configs.attr1)
+    <class 'attrmap.attrmap.AttrMap'>
+    >>> configs["attr3"].subattr1
+    "subattr1"
+
+    AttrMap supports the deepcopy:
+
+    >>> from copy import deepcopy
+    >>> configs = AttrMap(CONFIGS)
+    >>> configs_new = deepcopy(configs)
+    >>> configs is configs_new
+    False # They do not share the same memory.
+    >>> id(configs)
+    140578368145776
+    >>> id(configs_new)
+    140578368434576
+    >>> configs == configs_new
+    True # But the attributes and values are the same.
+
+    Users can delete the attributes with their corresponding values:
+
+    >>> del configs.attr1
+    >>> del configs["attr2"]
+    >>> print(configs)
+    Object Contains Following Attributes
+    attr3:
+            subattr1: subattr1
+            subattr2:
+                    subsubattr1: subsubattr1
+    # Protecting users from unintentionally creating attributes.
+    >>> configs.convert_state(read_only=True)
+    >>> configs.attr1
+    Traceback (most recent call last):
+    File "<stdin>", line 1, in <module>
+    File "xxxx/attrmap.py", line x, in __getattr__
+        if key.startswith(self._prefix):
+    AttributeError: No such attribute: attr1
+    >>> configs.attr2
+    Traceback (most recent call last):
+    File "<stdin>", line 1, in <module>
+    File "/xxxx/attrmap.py", line x, in __getattr__
+        if key.startswith(self._prefix):
+    AttributeError: No such attribute: attr2
+    >>> configs.convert_state(False)
+    >>> configs.attr1
+    # Empty line, but attribute `attr1` of type(AttrMap) has been created.
+    >>> configs.attr2
+    # Empty line, but attribute `attr2` of type(AttrMap) has been created.
+    >>> print(configs)
+    Object Contains Following Attributes
+    attr3:
+            subattr1: subattr1
+            subattr2:
+                    subsubattr1: subsubattr1
+    attr1: 
+    attr2:
+
+    .. NOTE:: `AttrMap` doesn't check the conflicts between
+        the content of `source` and parsed file.
+
+    .. Warning:: Due to `AttrMap` maintains properties and methods, 
+        some attribute cannot be accessed via attribute style, but they 
+        can still be accessed via `[""]` style. For example:
+
+    >>> configs = AttrMap(readonly="unintentional modification")
+    >>> configs.readonly
+    False
+    >>> configs["readonly"]
+    'unintentional modification'
+
+    .. Warning:: Set the name of attributes be the same with any python magic 
+        method is discouraged, even if they can be accessed via dict-style 
+        accessing.
+
+    .. Warning:: The attribute start with `_` might be conflict with `AttrMap`
+        reserved methods. If it's, your can access their values in dict-style.
     """
     def __init__(
         self, 
@@ -22,41 +202,11 @@ class AttrMap(object):
         read_only: bool=False, 
         **kwargs, 
     ) -> None:
-        r"""
-        Args:
-            source: A python built-in `dict` object to be converted to 
-                `AttrMap` object.
-            path2file: The path to `.json` or `.yaml` file. 
-                The content of file will be merged to `AttrMap` object.
-                NOTE `AttrMap` doesn't check the conflicts between
-                the content of `source` and parsed file.
-            read_only: Set the `AttrMap` object to read-only after the 
-                object is built.
-            kwargs: To allow the users build an `AttrMap` object like
-                built-in `dict()` method.
-
-        NOTE Due to `AttrMap` maintains properties and methods, 
-        some attribute cannot be accessed via attribute style, but they 
-        can still be accessed via `[""]` style. For example:
-        ```python
-        >>> configs = AttrMap(readonly="unintentional modification")
-        >>> configs.readonly
-        False
-        >>> configs["readonly"]
-        'unintentional modification'
-
-        NOTE The attributes should not be the same with any python magic 
-        method.
-
-        NOTE The attribute start with `_` might be conflict with `AttrMap`
-        preserved methods.
-        ```
-        """
         super(AttrMap, self).__init__()
         self.__dict__["ATTRMAP_LEVEL"] = 0
         self.__dict__["ATTRMAP_PREFIX"] = "_ATTRMAP_PREFIX_"
         self.__dict__["READ_ONLY"] = False
-        self.__dict__["PRESERVED"] = {
+        self.__dict__["RESERVED"] = {
             "read_only", "readonly", "todict", "convert_state", 
             "merge_from", "keys", "values", "vals", "items", 
             "contains"}
@@ -70,23 +220,75 @@ class AttrMap(object):
 
     @property
     def read_only(self) -> bool:
-        r"""
+        """
         Return the state of `AttrMap` object. 
         `True` is read-only and any modification to the object 
-        is not allowed.
+        is not allowed, i.e., add or delete an attribute, 
+        change the value of any attribute. 
+
+        >>> configs = AttrMap(CONFIGS)
+        >>> configs = configs.convert_state(read_only=True)
+        >>> print(configs)
+        Object Contains Following Attributes
+         attr1: 1
+         attr2: ['hello', ' ', 'world']
+         attr3:
+                subattr1: subattr1
+                subattr2:
+                        subsubattr1: subsubattr1
+        # Try to create a new attribute.
+        >>> configs.attr4 = "unintentional modification"
+        Traceback (most recent call last):
+          File "<stdin>", line 1, in <module>
+          File "/xxxx/attrmap.py", line x, in __setattr__
+            raise AttributeError(
+        AttributeError: A read only AttrMap instance is not allowed to modify its attribute.
+        # Try to modify the value of existing attribute:
+        >>> configs.attr1 = "unintentional modification"
+        Traceback (most recent call last):
+          File "<stdin>", line 1, in <module>
+          File "/xxxxx/attrmap.py", line x, in __setattr__
+            raise AttributeError(
+        AttributeError: A read only AttrMap instance is not allowed to modify its attribute.
+        >>> print(configs)
+        Object Contains Following Attributes
+         attr1: 1
+         attr2: ['hello', ' ', 'world']
+         attr3:
+                subattr1: subattr1
+                subattr2:
+                        subsubattr1: subsubattr1
         """
         return self.__dict__["READ_ONLY"]
 
     @property
     def readonly(self) -> bool:
-        r"""Alias of `read_only`"""
+        """Alias of `read_only`"""
         return self.read_only
 
     def todict(self) -> dict:
-        r"""
+        """
         Convert to a python builtin dict, which does not 
         share memory with AttrMap instance. 
         The state (is read-only or not) will not influence this method.
+        For example:
+
+        >>> configs = AttrMap(CONFIGS)
+        >>> configs_dict = configs.todict()
+        >>> print(configs_dict)
+        {'attr1': 1, 'attr2': ['hello', ' ', 'world'], 
+        'attr3': {'subattr1': 'subattr1', 
+        'subattr2': {'subsubattr1': 'subsubattr1'}}}
+        >>> print(type(configs_dict))
+        <class 'dict'>
+        # AttrMap object doesn't store the original dict. 
+        >>> print(id(configs_dict))
+        139881853477376
+        >>> print(id(CONFIGS))
+        139881853478464
+        # But it do not change the items:
+        >>> print(configs_dict == CONFIGS)
+        True
         """
         result = {}
         for key, value in self.__dict__.items():
@@ -98,11 +300,18 @@ class AttrMap(object):
         return result
 
     def convert_state(self, read_only: bool=None):
-        r"""
+        """
         Convert the state as read only or not. 
         If `None` is passed (not recommended), the state
         will be revert from `True` to `False` 
-        or `False` to `True`.
+        or `False` to `True`. This method will return the self object,
+        so the both two code snipts are equivalent:
+
+        >>> configs = AttrMap(CONFIGS)
+        >>> configs.convert_state(True)
+        >>> configs_new = configs.convert_state(True)
+        >>> id(configs) == id(configs_new)
+        True
         """
         if read_only is None:
             read_only = not self.readonly
@@ -118,9 +327,18 @@ class AttrMap(object):
         return self
 
     def merge_from(self, mapping=None, path2file: os.PathLike=None):
-        r"""
+        """
         Allows users to merge from a file or a mappable object.
         NOTE The existing value will be overwrited.
+
+        Args:
+            mapping:
+                An instance of dict or AttrMap.
+            path2file: 
+                The path to the json or yaml file.
+
+        Returns:
+            self object.
         """
         self._check_modifiable()
         if mapping is not None:
@@ -139,8 +357,23 @@ class AttrMap(object):
         return self.__dict__["ATTRMAP_LEVEL"]
 
     def keys(self) -> List[str]:
-        r"""
-        Get the (top level) keys of `AttrMap` object.
+        """
+        Get the (top level) keys of `AttrMap` object. 
+
+        Returns:
+            keys: A list of keys.
+
+        >>> configs = AttrMap(CONFIGS)
+        >>> configs.keys()
+        ['attr1', 'attr2', 'attr3']
+        >>> type(configs.keys())
+        <class 'list'>
+
+        That is, only the top-level attribute names will be returned.
+        Similarily:
+
+        >>> configs['attr3'].keys() # equivalent to configs.attr3.keys()
+        ['subattr1', 'subattr2']
         """
         keys = filter(
             lambda x: x.startswith(self._prefix), self.__dict__.keys()
@@ -149,9 +382,28 @@ class AttrMap(object):
         return list(keys)
 
     def values(self) -> List[Any]:
-        r"""
+        """
         Get the (top level) values of `AttrMap` object.
-        The alias of `values` is `vals`.
+        The alias of `values` is `vals`. 
+
+        Returns:
+            values: A list of values.
+
+        >>> values = configs.values()
+        >>> print(type(values))
+        <class 'list'>
+        >>> print(values)
+        [1, ['hello', ' ', 'world'],     subattr1: subattr1
+         subattr2:
+                 subsubattr1: subsubattr1, ]
+        >>> type(values[0])
+        <class 'int'>
+        >>> type(values[1])
+        <class 'list'>
+        >>> type(values[2])
+        <class 'attrmap.attrmap.AttrMap'>
+        >>> type(values[3])
+        <class 'attrmap.attrmap.AttrMap'>
         """
         values = []
         for key in self.keys():
@@ -161,13 +413,39 @@ class AttrMap(object):
     vals = values
 
     def items(self) -> Iterable:
-        r"""
+        """
         Get the (top level) `key-value` pair of `AttrMap` object like `dict`.
+
+        Returns:
+            items: zip object.
+
+        >>> configs = AttrMap(CONFIGS)
+        >>> configs.items()
+        <zip object at 0x7fdaf3843a80>
+        >>> for key, val in configs.items():
+        ...     print(key, val)
+        ... # End of for loop.
+        attr1 1
+        attr2 ['hello', ' ', 'world']
+        attr3   subattr1: subattr1
+                subattr2:
+                        subsubattr1: subsubattr1
         """
         return zip(self.keys(), self.vals())
 
     def contains(self, name: str) -> bool:
-        r"""Check if `AttrMap` contains specific attribute."""
+        """
+        Check if `AttrMap` contains specific attribute. It's the core
+        of python magic method `__contains__`, which support the for loop.
+
+        >>> configs = AttrMap(CONFIGS)
+        >>> for obj in configs:
+        ...     print(obj)
+        ... # End of for loop.
+        ('attr1', 1)
+        ('attr2', ['hello', ' ', 'world'])
+        ('attr3', {'subattr1': 'subattr1', 'subattr2': {'subsubattr1': 'subsubattr1'}})
+        """
         return self._wrap_name(name) in self.__dict__.keys()
 
     def _update_level(self):
@@ -202,8 +480,8 @@ class AttrMap(object):
 
     def __setattr__(self, key: str, value: Any):
         self._check_modifiable()
-        if key in self.__dict__["PRESERVED"]:
-            self._preserved_warning(key)
+        if key in self.__dict__["RESERVED"]:
+            self._reserved_warning(key)
         value = AttrMap(value) if isinstance(value, Mapping) else value
         self.__dict__[self._wrap_name(key)] = value
         self._update_level()
@@ -289,10 +567,10 @@ class AttrMap(object):
                 f"is not allowed to modify its attribute."
             )
 
-    def _preserved_warning(self, key: str):
+    def _reserved_warning(self, key: str):
         warn(
             f"AttrMap get an attribute `{key}` which is in the "
-            f"preserved set {self.__dict__['PRESERVED']}."
+            f"reserved set {self.__dict__['RESERVED']}."
             f"You cannot access this attribute via attribute-style "
             f"accessing, but the dict style [''] still works.")
 
@@ -300,6 +578,20 @@ def merge_mapping(
     mapping: Union[AttrMap, dict], 
     another: Union[AttrMap, dict], 
 ) -> AttrMap:
+    """
+    Merge another dict or AttrMap object to a given dict or AttrMap object.
+
+    Args:
+        mapping:
+            The given object.
+        another:
+            Another object.
+
+    Returns:
+        obj: An AttrMap object.
+
+    .. NOTE:: The value of the given object `mapping` will be overwritten.
+    """
     if isinstance(mapping, AttrMap):
         mapping = mapping.todict()
     if isinstance(another, AttrMap):
@@ -317,10 +609,24 @@ def merge_mapping(
 
 
 def overwrite_mapping_from_file(
-    mapping: AttrMap, path2file: Union[str, os.PathLike]
+    mapping: Union[dict, AttrMap], path2file: Union[str, os.PathLike]
 ) -> AttrMap:
+    """
+    Similar to `merge_mapping`, the difference lie in another source, here
+    another source is a json file or a yaml file.
+
+    Args:
+        mapping: 
+            The given source.
+        path2file:
+            The path to another source, 
+            currently supports both json and yaml file.
+
+    Returns:
+        obj: An AttrMap object.
+    """
     if not os.path.exists(path2file):
-        return mapping
+        raise FileNotFoundError(f"File {path2file} not found.")
     with open(path2file, 'r') as fp:
         if path2file.endswith(".yaml") or path2file.endswith(".yml"):
             mapping_file = yaml.safe_load(fp)

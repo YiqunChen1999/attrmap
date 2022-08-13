@@ -159,7 +159,17 @@ print(configs)
 
 ## Known Issues
 
-- Attributes start with `_` might be conflict with `AttrMap` perserved methods.
+- Attributes start with `_` might be conflict with `AttrMap` perserved methods/properties. Attributes can still be accessed via dict-style (`[""]`), but the attribute-style
+will return the "protected" (not the term of python, only means it's not "public") method such as `_build_from_dict`.
+- Some public available properties and methods are reserved, they can only accessed via the dict-style.
+
+## Running Tests
+
+Open bash shell and execute:
+
+```bash
+bash -i ./auto_test.sh
+```
 
 ## APIs
 
