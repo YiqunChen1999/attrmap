@@ -1,7 +1,7 @@
 
-from collections import UserDict
 from attrmap import AttrMap
 from copy import deepcopy as dcp
+import pytest
 
 
 CONFIGS = {
@@ -110,10 +110,31 @@ def test_items():
 
 def test_delete_item():
     configs = AttrMap(CONFIGS)
+
     configs.convert_state(read_only=True)
+    with pytest.raises(AttributeError):
+        del configs.attr1
+    assert hasattr(configs, "attr1")
+
+    with pytest.raises(AttributeError):
+        del configs.attr3.subattr2.subsubattr1
+    assert hasattr(configs.attr3.subattr2, "subsubattr1")
+
+    with pytest.raises(AttributeError):
+        del configs.attr3.subattr1
+    assert hasattr(configs.attr3, "subattr1")
+
+    configs.convert_state(read_only=False)
     del configs.attr1
+    configs.convert_state(read_only=True)
     assert not hasattr(configs, "attr1")
+    configs.convert_state(read_only=False)
     del configs.attr3.subattr2.subsubattr1
+    configs.convert_state(read_only=True)
     assert not hasattr(configs.attr3.subattr2, "subsubattr1")
+    configs.convert_state(read_only=False)
     del configs.attr3["subattr1"]
+    configs.convert_state(read_only=True)
     assert not hasattr(configs.attr3, "subattr1")
+
+

@@ -6,6 +6,7 @@ Docs:
 """
 
 import os, yaml, json
+from warnings import warn
 from typing import Any, Iterable, Mapping, Union, List
 from copy import deepcopy as dcp
 
@@ -21,29 +22,71 @@ class AttrMap(object):
         read_only: bool=False, 
         **kwargs, 
     ) -> None:
+        r"""
+        Args:
+            source: A python built-in `dict` object to be converted to 
+                `AttrMap` object.
+            path2file: The path to `.json` or `.yaml` file. 
+                The content of file will be merged to `AttrMap` object.
+                NOTE `AttrMap` doesn't check the conflicts between
+                the content of `source` and parsed file.
+            read_only: Set the `AttrMap` object to read-only after the 
+                object is built.
+            kwargs: To allow the users build an `AttrMap` object like
+                built-in `dict()` method.
+
+        NOTE Due to `AttrMap` maintains properties and methods, 
+        some attribute cannot be accessed via attribute style, but they 
+        can still be accessed via `[""]` style. For example:
+        ```python
+        >>> configs = AttrMap(readonly="unintentional modification")
+        >>> configs.readonly
+        False
+        >>> configs["readonly"]
+        'unintentional modification'
+
+        NOTE The attributes should not be the same with any python magic 
+        method.
+
+        NOTE The attribute start with `_` might be conflict with `AttrMap`
+        preserved methods.
+        ```
+        """
         super(AttrMap, self).__init__()
         self.__dict__["ATTRMAP_LEVEL"] = 0
         self.__dict__["ATTRMAP_PREFIX"] = "_ATTRMAP_PREFIX_"
-        self.__dict__["READ_ONLY"] = read_only
+        self.__dict__["READ_ONLY"] = False
+        self.__dict__["PRESERVED"] = {
+            "read_only", "readonly", "todict", "convert_state", 
+            "merge_from", "keys", "values", "vals", "items", 
+            "contains"}
         if source is not None:
             self._build_from_dict(source)
         if kwargs:
             self._build_from_dict(kwargs)
         if path2file is not None:
             self._build_from_file(path2file)
+        self.convert_state(read_only=read_only)
 
     @property
     def read_only(self) -> bool:
+        r"""
+        Return the state of `AttrMap` object. 
+        `True` is read-only and any modification to the object 
+        is not allowed.
+        """
         return self.__dict__["READ_ONLY"]
 
     @property
     def readonly(self) -> bool:
+        r"""Alias of `read_only`"""
         return self.read_only
 
     def todict(self) -> dict:
         r"""
         Convert to a python builtin dict, which does not 
-        share memory with AttrMap instance.
+        share memory with AttrMap instance. 
+        The state (is read-only or not) will not influence this method.
         """
         result = {}
         for key, value in self.__dict__.items():
@@ -56,7 +99,10 @@ class AttrMap(object):
 
     def convert_state(self, read_only: bool=None):
         r"""
-        Convert the state as read only or not.
+        Convert the state as read only or not. 
+        If `None` is passed (not recommended), the state
+        will be revert from `True` to `False` 
+        or `False` to `True`.
         """
         if read_only is None:
             read_only = not self.readonly
@@ -71,8 +117,12 @@ class AttrMap(object):
                 value.convert_state(read_only)
         return self
 
-
     def merge_from(self, mapping=None, path2file: os.PathLike=None):
+        r"""
+        Allows users to merge from a file or a mappable object.
+        NOTE The existing value will be overwrited.
+        """
+        self._check_modifiable()
         if mapping is not None:
             new = merge_mapping(self, mapping)
         if path2file is not None:
@@ -89,6 +139,9 @@ class AttrMap(object):
         return self.__dict__["ATTRMAP_LEVEL"]
 
     def keys(self) -> List[str]:
+        r"""
+        Get the (top level) keys of `AttrMap` object.
+        """
         keys = filter(
             lambda x: x.startswith(self._prefix), self.__dict__.keys()
         )
@@ -96,6 +149,10 @@ class AttrMap(object):
         return list(keys)
 
     def values(self) -> List[Any]:
+        r"""
+        Get the (top level) values of `AttrMap` object.
+        The alias of `values` is `vals`.
+        """
         values = []
         for key in self.keys():
             values.append(self[key])
@@ -104,9 +161,13 @@ class AttrMap(object):
     vals = values
 
     def items(self) -> Iterable:
+        r"""
+        Get the (top level) `key-value` pair of `AttrMap` object like `dict`.
+        """
         return zip(self.keys(), self.vals())
 
     def contains(self, name: str) -> bool:
+        r"""Check if `AttrMap` contains specific attribute."""
         return self._wrap_name(name) in self.__dict__.keys()
 
     def _update_level(self):
@@ -140,11 +201,9 @@ class AttrMap(object):
         self.__setattr__(key, value)
 
     def __setattr__(self, key: str, value: Any):
-        if self.read_only:
-            raise AttributeError(
-                f"A read only AttrMap instance "
-                f"is not allowed to modify its attribute."
-            )
+        self._check_modifiable()
+        if key in self.__dict__["PRESERVED"]:
+            self._preserved_warning(key)
         value = AttrMap(value) if isinstance(value, Mapping) else value
         self.__dict__[self._wrap_name(key)] = value
         self._update_level()
@@ -167,9 +226,11 @@ class AttrMap(object):
         self.__dict__.update(state)
 
     def __delitem__(self, key: str):
+        self._check_modifiable()
         del self.__dict__[self._wrap_name(key)]
 
     def __delattr__(self, key: str) -> None:
+        self._check_modifiable()
         del self.__dict__[self._wrap_name(key)]
 
     def __eq__(self, other) -> bool:
@@ -221,6 +282,19 @@ class AttrMap(object):
 
     __repr__ = __str__
 
+    def _check_modifiable(self):
+        if self.read_only:
+            raise AttributeError(
+                f"A read only AttrMap instance "
+                f"is not allowed to modify its attribute."
+            )
+
+    def _preserved_warning(self, key: str):
+        warn(
+            f"AttrMap get an attribute `{key}` which is in the "
+            f"preserved set {self.__dict__['PRESERVED']}."
+            f"You cannot access this attribute via attribute-style "
+            f"accessing, but the dict style [''] still works.")
 
 def merge_mapping(
     mapping: Union[AttrMap, dict], 
