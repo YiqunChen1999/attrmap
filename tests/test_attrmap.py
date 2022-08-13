@@ -106,3 +106,14 @@ def test_items():
         if isinstance(val, AttrMap):
             val = val.todict()
         assert val == dict_it[1], attr_it[1]
+
+
+def test_delete_item():
+    configs = AttrMap(CONFIGS)
+    configs.convert_state(read_only=True)
+    del configs.attr1
+    assert not hasattr(configs, "attr1")
+    del configs.attr3.subattr2.subsubattr1
+    assert not hasattr(configs.attr3.subattr2, "subsubattr1")
+    del configs.attr3["subattr1"]
+    assert not hasattr(configs.attr3, "subattr1")

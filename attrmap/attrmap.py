@@ -6,7 +6,7 @@ Docs:
 """
 
 import os, yaml, json
-from typing import Any, Iterable, Mapping, Union
+from typing import Any, Iterable, Mapping, Union, List
 from copy import deepcopy as dcp
 
 class AttrMap(object):
@@ -88,14 +88,14 @@ class AttrMap(object):
     def _level(self) -> int:
         return self.__dict__["ATTRMAP_LEVEL"]
 
-    def keys(self) -> list[str]:
+    def keys(self) -> List[str]:
         keys = filter(
             lambda x: x.startswith(self._prefix), self.__dict__.keys()
         )
         keys = map(lambda x: x.replace(self._prefix, ""), keys)
         return list(keys)
 
-    def values(self) -> list[Any]:
+    def values(self) -> List[Any]:
         values = []
         for key in self.keys():
             values.append(self[key])
@@ -169,6 +169,9 @@ class AttrMap(object):
     def __delitem__(self, key: str):
         del self.__dict__[self._wrap_name(key)]
 
+    def __delattr__(self, key: str) -> None:
+        del self.__dict__[self._wrap_name(key)]
+
     def __eq__(self, other) -> bool:
         return self.__dict__ == other.__dict__
 
@@ -217,6 +220,7 @@ class AttrMap(object):
         return string
 
     __repr__ = __str__
+
 
 def merge_mapping(
     mapping: Union[AttrMap, dict], 
