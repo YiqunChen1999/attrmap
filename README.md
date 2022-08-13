@@ -9,6 +9,8 @@
 
 Users are welcome to report issues or request new features.
 
+The API references can be found [here](https://attrmap.readthedocs.io/en/latest/index.html).
+
 ## What's New
 
 - 2022-08-13: Fix the `delattr` bug, you can delete an item via `del obj.attr` when `AttrMap` object is modifiable.
@@ -173,11 +175,9 @@ bash -i ./auto_test.sh
 
 ## APIs
 
-It will be updated soon.
+See [The API Reference](https://attrmap.readthedocs.io/en/latest/modules.html)
 
 ## TODO
-
-- [ ] Add APIs' document.
 
 ## LICENSE
 
