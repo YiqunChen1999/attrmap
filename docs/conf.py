@@ -21,7 +21,7 @@ release = '0.0.4'
 
 extensions = [
     'recommonmark',
-    'sphinx_markdown_tables', 
+    # 'sphinx_markdown_tables', 
     'sphinx.ext.autodoc', 
  ]
 
