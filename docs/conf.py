@@ -22,11 +22,11 @@ release = '0.0.6'
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    # 'recommonmark',
+    'recommonmark',
     # 'sphinx_markdown_tables',
     'sphinx.ext.autodoc',
  ]
-
+# source_suffix = '.md'
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
