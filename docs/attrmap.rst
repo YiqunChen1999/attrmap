@@ -4,7 +4,7 @@ attrmap package
 attrmap.attrmap module
 ----------------------
 
-.. automodule:: attrmap.attrmap
+.. autoclass:: attrmap.attrmap.AttrMap
    :members:
    :undoc-members:
    :show-inheritance:

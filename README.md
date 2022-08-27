@@ -116,7 +116,7 @@ configs = configs.convert_state(read_only=True)
 configs.attr4 = "unintentional modification"
 # Traceback (most recent call last):
 #   File "<stdin>", line 1, in <module>
-#   File "/xxxx/attrmap.py", line 144, in __setattr__
+#   File "/xxxx/attrmap.py", line xxx, in __setattr__
 #     raise AttributeError(
 # AttributeError: A read only AttrMap instance is not allowed to modify its attribute.
 
@@ -124,7 +124,7 @@ configs.attr4 = "unintentional modification"
 configs.attr1 = "unintentional modification"
 # Traceback (most recent call last):
 #   File "<stdin>", line 1, in <module>
-#   File "/xxxxx/attrmap.py", line 144, in __setattr__
+#   File "/xxxxx/attrmap.py", line xxx, in __setattr__
 #     raise AttributeError(
 # AttributeError: A read only AttrMap instance is not allowed to modify its attribute.
 ```

@@ -38,6 +38,7 @@ class AttrMap(object):
     existing python built-in object:
 
     >>> from attrmap import AttrMap
+    >>> import attrmap.utils as au
     >>> CONFIGS = {
     ... "attr1": 1,
     ... "attr2": ["hello", " ", "world"],
@@ -109,16 +110,16 @@ class AttrMap(object):
     1
     >>> configs["attr1"]
     1
-    >>> configs.convert_state(read_only=False)
+    >>> au.convert_state(configs, read_only=False)
     >>> del configs.attr1
-    >>> configs.convert_state(read_only=True)
+    >>> au.convert_state(configs, read_only=True)
     >>> configs.attr1
     Traceback (most recent call last):
     File "<stdin>", line 1, in <module>
     File "/xxxx/attrmap.py", line xxx, in __getattr__
         Get the (top level) `key-value` pair of `AttrMap` object like `dict`.
     AttributeError: No such attribute: attr1
-    >>> configs.convert_state(read_only=False)
+    >>> au.convert_state(configs, read_only=False)
     >>> configs.attr1
     # Get an empty line, but the attribute attr1 is created.
     >>> type(configs.attr1)
@@ -151,20 +152,20 @@ class AttrMap(object):
             subattr2:
                     subsubattr1: subsubattr1
     # Protecting users from unintentionally creating attributes.
-    >>> configs.convert_state(read_only=True)
+    >>> au.convert_state(configs, read_only=True)
     >>> configs.attr1
     Traceback (most recent call last):
     File "<stdin>", line 1, in <module>
-    File "xxxx/attrmap.py", line x, in __getattr__
+    File "xxxx/attrmap.py", line xxx, in __getattr__
         if key.startswith(self._prefix):
     AttributeError: No such attribute: attr1
     >>> configs.attr2
     Traceback (most recent call last):
     File "<stdin>", line 1, in <module>
-    File "/xxxx/attrmap.py", line x, in __getattr__
+    File "/xxxx/attrmap.py", line xxx, in __getattr__
         if key.startswith(self._prefix):
     AttributeError: No such attribute: attr2
-    >>> configs.convert_state(False)
+    >>> au.convert_state(configs, False)
     >>> configs.attr1
     # Empty line, but attribute `attr1` of type(AttrMap) has been created.
     >>> configs.attr2
@@ -186,7 +187,7 @@ class AttrMap(object):
         can still be accessed via `[""]` style. For example:
 
     >>> configs = AttrMap(readonly="unintentional modification")
-    >>> configs.readonly
+    >>> au.is_read_only(configs)
     False
     >>> configs["readonly"]
     'unintentional modification'

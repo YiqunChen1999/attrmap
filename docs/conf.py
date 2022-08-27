@@ -5,30 +5,30 @@
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
-import sys
-sys.path.append('../attrmap')
 
+import os
+import sys
 import sphinx_rtd_theme
+sys.path.append('../attrmap')
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 
 
 project = 'attrmap'
 copyright = '2022, Yiqun Chen'
 author = 'Yiqun Chen'
-release = '0.0.4'
+release = '0.0.6'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
     'recommonmark',
-    # 'sphinx_markdown_tables', 
-    'sphinx.ext.autodoc', 
+    # 'sphinx_markdown_tables',
+    'sphinx.ext.autodoc',
  ]
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
-
-
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
