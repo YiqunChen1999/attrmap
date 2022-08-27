@@ -8,9 +8,9 @@ do
     echo "creating conda environment with python version $ver"
     conda create -n py3.$ver python=3.$ver -y
     conda activate py3.$ver
-    # python3 -m pip install --user -e .
-    pip install -U attrmap
     conda install pytest -y
+    python3 -m pip install --user -e .
+    # pip install -U attrmap
     pytest tests
     conda deactivate
 done

@@ -1,7 +1,20 @@
 
+import yaml
+import json
 from attrmap import AttrMap
 from copy import deepcopy as dcp
 import pytest
+
+from attrmap.utils import (
+    contains,
+    convert_state,
+    get_items,
+    get_keys,
+    get_vals,
+    is_modifiable,
+    is_read_only,
+    merge_from,
+    todict)
 
 
 CONFIGS = {
@@ -28,18 +41,17 @@ def test_attrmap():
 
 def test_build_from_file():
     cfg_json = AttrMap(
-        path2file=__file__.replace("test_attrmap.py", "test.json")
+        path2file=__file__.replace("test_utils.py", "test.json")
     )
     cfg_yaml = AttrMap(
-        path2file=__file__.replace("test_attrmap.py", "test.yaml")
+        path2file=__file__.replace("test_utils.py", "test.yaml")
     )
     assert cfg_json == cfg_yaml
 
 
 def test_merge_from():
-    cfg_yaml = AttrMap(
-        path2file=__file__.replace("test_attrmap.py", "test.yaml")
-    )
+    path2file = __file__.replace("test_utils.py", "test.yaml")
+    cfg_yaml = AttrMap(path2file=path2file)
     assert "language" in cfg_yaml.keys(), cfg_yaml.keys()
     configs = AttrMap(dcp(CONFIGS))
     configs.merge_from(cfg_yaml)
@@ -48,11 +60,18 @@ def test_merge_from():
     for key in cfg_yaml.keys():
         assert key in configs.keys(), configs.keys()
 
+    with open(path2file, 'r') as fp:
+        mapping_file = yaml.safe_load(fp)
+    configs = AttrMap()
+    merge_from(configs, path2file=path2file)
+    todict(configs) == mapping_file
+
 
 def test_read_only():
     configs = AttrMap(CONFIGS)
     configs.convert_state(True)
-    assert configs.readonly
+    assert configs.readonly is is_read_only(configs)
+    assert configs.readonly is not is_modifiable(configs)
     try:
         configs.attr1 = "hello world"
         assert False, configs.readonly
@@ -60,23 +79,26 @@ def test_read_only():
         pass
 
 
-def test_str():
-    start = ""
+def test_to_dict():
     configs = AttrMap(CONFIGS)
-    string = f"Object Contains Following Attributes\n" \
-             + f"{start} attr1: 1\n" \
-             + f"{start} attr2: ['hello', ' ', 'world']\n" \
-             + f"{start} attr3: \n" \
-             + f"\t{start} subattr1: subattr1\n" \
-             + f"\t{start} subattr2: \n" \
-             + f"\t\t{start} subsubattr1: subsubattr1"
-    assert string == str(configs), str(configs)
+    configs = todict(configs)
+    assert configs == CONFIGS
+
+
+def test_convert_state():
+    configs = AttrMap(CONFIGS)
+    _configs = convert_state(configs, read_only=True)
+    assert configs is _configs
+    assert is_read_only(configs) is True
+    convert_state(configs, read_only=False)
+    assert is_read_only(configs) is False
 
 
 def test_contains():
     configs = AttrMap(CONFIGS)
     for key in CONFIGS.keys():
-        assert configs.contains(key), key
+        assert contains(configs, key), key
+        assert key in configs
 
 
 def test_getitem():
@@ -84,29 +106,30 @@ def test_getitem():
     for key in CONFIGS.keys():
         val = configs[key]
         if isinstance(val, AttrMap):
-            val = val.todict()
+            val = todict(val)
         assert val == CONFIGS[key], val
 
 
 def test_keys():
     configs = AttrMap(CONFIGS)
-    assert sorted(configs.keys()) == sorted(list(CONFIGS.keys())),\
-        configs.keys()
+    assert sorted(list(CONFIGS.keys())) \
+           == sorted(get_keys(configs)),\
+           configs.keys()
 
 
 def test_vals():
     configs = AttrMap(CONFIGS)
-    attr_vals = configs.values()
+    attr_vals = get_vals(configs)
     dict_vals = CONFIGS.values()
     for attr_val, dict_val in zip(attr_vals, dict_vals):
         if isinstance(attr_val, AttrMap):
-            attr_val = attr_val.todict()
+            attr_val = todict(attr_val)
         assert attr_val == dict_val, attr_val
 
 
 def test_items():
     configs = AttrMap(CONFIGS)
-    attr_items = configs.items()
+    attr_items = get_items(configs)
     dict_items = CONFIGS.items()
     # dict_items = list(dict_items)
     for attr_it, dict_it in zip(attr_items, dict_items):
@@ -120,7 +143,7 @@ def test_items():
 def test_delete_item():
     configs = AttrMap(CONFIGS)
 
-    configs.convert_state(read_only=True)
+    convert_state(configs, read_only=True)
     with pytest.raises(AttributeError):
         del configs.attr1
     assert hasattr(configs, "attr1")
@@ -133,15 +156,15 @@ def test_delete_item():
         del configs.attr3.subattr1
     assert hasattr(configs.attr3, "subattr1")
 
-    configs.convert_state(read_only=False)
+    convert_state(configs, read_only=False)
     del configs.attr1
-    configs.convert_state(read_only=True)
+    convert_state(configs, read_only=True)
     assert not hasattr(configs, "attr1")
-    configs.convert_state(read_only=False)
+    convert_state(configs, read_only=False)
     del configs.attr3.subattr2.subsubattr1
-    configs.convert_state(read_only=True)
+    convert_state(configs, read_only=True)
     assert not hasattr(configs.attr3.subattr2, "subsubattr1")
-    configs.convert_state(read_only=False)
+    convert_state(configs, read_only=False)
     del configs.attr3["subattr1"]
-    configs.convert_state(read_only=True)
+    convert_state(configs, read_only=True)
     assert not hasattr(configs.attr3, "subattr1")
