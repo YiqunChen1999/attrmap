@@ -217,7 +217,8 @@ class AttrMap(object):
             self._build_from_dict(kwargs)
         if path2file is not None:
             self._build_from_file(path2file)
-        self.convert_state(read_only=read_only)
+        import attrmap.utils as au
+        au.convert_state(self, read_only=read_only)
 
     @property
     def read_only(self) -> bool:
@@ -261,6 +262,10 @@ class AttrMap(object):
                 subattr1: subattr1
                 subattr2:
                         subsubattr1: subsubattr1
+
+        .. Warning:: To reduce 'problematic' attributes,
+            `read_only` is deprecated,
+            use `attrmap.utils.is_read_only` instead.
         """
         warn("To reduce 'problematic' attributes, `read_only` is deprecated, "
              "use `attrmap.utils.is_read_only` instead.")
@@ -268,7 +273,13 @@ class AttrMap(object):
 
     @property
     def readonly(self) -> bool:
-        """Alias of `read_only`"""
+        """
+        Alias of `read_only`
+
+        .. Warning:: To reduce 'problematic' attributes,
+            `readonly` is deprecated,
+            use `attrmap.utils.is_read_only` instead.
+        """
         warn("To reduce 'problematic' attributes, `readonly` is deprecated, "
              "use `attrmap.utils.is_read_only` instead.")
         return self.read_only
@@ -296,6 +307,12 @@ class AttrMap(object):
         # But it do not change the items:
         >>> print(configs_dict == CONFIGS)
         True
+
+        .. Warning:: To reduce 'problematic' attributes,
+            `todict` is deprecated,
+            use `attrmap.utils.todict`
+            or `attrmap.utils.to_dict`
+            or `attrmap.utils.convert_to_dict` instead.
         """
         warn("To reducec 'problematic' attributes, todict is deprecated, "
              "use `attrmap.utils.todict` "
@@ -323,9 +340,13 @@ class AttrMap(object):
         >>> configs_new = configs.convert_state(True)
         >>> id(configs) == id(configs_new)
         True
+
+        .. Warning:: To reduce 'problematic' attributes,
+            `convert_state` is deprecated,
+            use `attrmap.utils.convert_state` instead.
         """
         warn("To reduce `problematic` attributes, "
-             "convert_state is deprecated, "
+             "`convert_state` is deprecated, "
              "use `attrmap.utils.convert_state` instead.")
         if read_only is None:
             read_only = not self.readonly
@@ -353,6 +374,10 @@ class AttrMap(object):
 
         Returns:
             self object.
+
+        .. Warning:: To reduce 'problematic' attributes,
+            `merge_from` is deprecated,
+            use `attrmap.utils.merge_from` instead.
         """
         warn("To reduce `problematic` attributes, "
              "`merge_from` is deprecated, "
@@ -391,6 +416,10 @@ class AttrMap(object):
 
         >>> configs['attr3'].keys() # equivalent to configs.attr3.keys()
         ['subattr1', 'subattr2']
+
+        .. Warning:: To reduce 'problematic' attributes,
+            `keys` is deprecated,
+            use `attrmap.utils.get_keys` instead.
         """
         warn("To reduce 'problematic' attributes, "
              "`keys` is deprecated, "
@@ -424,6 +453,11 @@ class AttrMap(object):
         <class 'attrmap.attrmap.AttrMap'>
         >>> type(values[3])
         <class 'attrmap.attrmap.AttrMap'>
+
+        .. Warning:: To reduce 'problematic' attributes,
+            `keys` is deprecated,
+            use `attrmap.utils.get_vals`
+            or `attrmap.utils.get_values` instead.
         """
         warn("To reduce 'problematic' attributes, "
              "`values` is deprecated, "
@@ -454,6 +488,10 @@ class AttrMap(object):
         attr3   subattr1: subattr1
                 subattr2:
                         subsubattr1: subsubattr1
+
+        .. Warning:: To reduce 'problematic' attributes,
+            `items` is deprecated,
+            use `attrmap.utils.get_items` instead.
         """
         warn("To reduce 'problematic' attributes, "
              "`items` is deprecated, "
@@ -473,6 +511,11 @@ class AttrMap(object):
         ('attr2', ['hello', ' ', 'world'])
         ('attr3', {'subattr1': 'subattr1', \
             'subattr2': {'subsubattr1': 'subsubattr1'}})
+
+        .. Warning:: To reduce 'problematic' attributes,
+            `contains` is deprecated,
+            use `attrmap.utils.contains`
+            or `in` syntax instead.
         """
         warn("To reduce 'problematic' attributes, "
              "`contains` is deprecated, "
@@ -547,7 +590,8 @@ class AttrMap(object):
         return self.__dict__ == other.__dict__
 
     def __iter__(self) -> Iterable:
-        return iter(self.todict().items())
+        import attrmap.utils as au
+        return iter(au.todict(self).items())
 
     def __contains__(self, item: str) -> bool:
         return self._wrap_name(item) in self.__dict__.keys()
@@ -578,7 +622,8 @@ class AttrMap(object):
         level = self._level
         if level == 0:
             string.append("Object Contains Following Attributes")
-        for key, value in self.items():
+        import attrmap.utils as au
+        for key, value in au.get_items(self):
             substring = template.format(
                 "\t" * self._level,
                 start,
@@ -591,7 +636,8 @@ class AttrMap(object):
         return string
 
     def _check_modifiable(self):
-        if self.read_only:
+        import attrmap.utils as au
+        if au.is_read_only(self):
             raise AttributeError(
                 f"A read only AttrMap instance "
                 f"is not allowed to modify its attribute."
@@ -622,6 +668,9 @@ def merge_mapping(
         obj: An AttrMap object.
 
     .. NOTE:: The value of the given object `mapping` will be overwritten.
+
+    .. Warning:: `merge_mapping` is deprecated,
+        use `attrmap.utils.merge_from_mapping` instead.
     """
     warn("`attrmap.attrmap.merge_mapping` is deprecated, "
          "use `attrmap.utils.merge_from_mapping` instead.")
@@ -657,6 +706,9 @@ def overwrite_mapping_from_file(
 
     Returns:
         obj: An AttrMap object.
+
+    .. Warning:: `overwrite_mapping_from_file` is deprecated,
+        use `attrmap.utils.merge_from_file` instead.
     """
     warn("`attrmap.attrmap.overwrite_mapping_from_file` is deprecated, "
          "use `attrmap.utils.merge_from_file` instead.")

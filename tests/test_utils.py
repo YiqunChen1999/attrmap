@@ -52,13 +52,13 @@ def test_build_from_file():
 def test_merge_from():
     path2file = __file__.replace("test_utils.py", "test.yaml")
     cfg_yaml = AttrMap(path2file=path2file)
-    assert "language" in cfg_yaml.keys(), cfg_yaml.keys()
+    assert "language" in get_keys(cfg_yaml), get_keys(cfg_yaml)
     configs = AttrMap(dcp(CONFIGS))
-    configs.merge_from(cfg_yaml)
+    merge_from(configs, cfg_yaml)
     for key in list(CONFIGS.keys()):
-        assert key in configs.keys(), configs.keys()
-    for key in cfg_yaml.keys():
-        assert key in configs.keys(), configs.keys()
+        assert key in get_keys(configs), get_keys(configs)
+    for key in get_keys(cfg_yaml):
+        assert key in get_keys(configs), get_keys(configs)
 
     with open(path2file, 'r') as fp:
         mapping_file = yaml.safe_load(fp)
@@ -69,7 +69,7 @@ def test_merge_from():
 
 def test_read_only():
     configs = AttrMap(CONFIGS)
-    configs.convert_state(True)
+    convert_state(configs, True)
     assert configs.readonly is is_read_only(configs)
     assert configs.readonly is not is_modifiable(configs)
     try:
@@ -136,7 +136,7 @@ def test_items():
         assert attr_it[0] == dict_it[0], attr_it[0]
         val = attr_it[1]
         if isinstance(val, AttrMap):
-            val = val.todict()
+            val = todict(val)
         assert val == dict_it[1], attr_it[1]
 
 

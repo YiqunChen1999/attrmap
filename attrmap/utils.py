@@ -22,22 +22,86 @@ _RESERVED = 'RESERVED'
 
 
 def is_read_only(am: AttrMap) -> bool:
+    """
+    Return the state of `AttrMap` object.
+    `True` is read-only and any modification to the object
+    is not allowed, e.g., add or delete an attribute,
+    change the value of any attribute.
+
+    >>> configs = AttrMap(CONFIGS)
+    >>> configs = convert_state(configs, read_only=True)
+    >>> print(configs)
+    Object Contains Following Attributes
+        attr1: 1
+        attr2: ['hello', ' ', 'world']
+        attr3:
+            subattr1: subattr1
+            subattr2:
+                    subsubattr1: subsubattr1
+    # Try to create a new attribute.
+    >>> configs.attr4 = "unintentional modification"
+    Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+        File "/xxxx/attrmap.py", line xxx, in __setattr__
+            self._check_modifiable()
+        File "/xxxx/attrmap.py", line xxx, in _check_modifiable
+            raise AttributeError(
+        AttributeError: A read only AttrMap instance is not allowed to modify\
+            its attribute.
+    # Try to modify the value of existing attribute:
+    >>> configs.attr1 = "unintentional modification"
+    Traceback (most recent call last):
+        File "<stdin>", line 1, in <module>
+        File "/xxxx/attrmap.py", line xxx, in __setattr__
+            self._check_modifiable()
+        File "/xxxx/attrmap.py", line xxx, in _check_modifiable
+            raise AttributeError(
+        AttributeError: A read only AttrMap instance is not allowed to modify\
+            its attribute.
+    >>> print(configs)
+    Object Contains Following Attributes
+        attr1: 1
+        attr2: ['hello', ' ', 'world']
+        attr3:
+            subattr1: subattr1
+            subattr2:
+                    subsubattr1: subsubattr1
+    """
     return am.__dict__[_READ_ONLY]
 
 
 def is_modifiable(am: AttrMap) -> bool:
+    """
+    Return the state of `AttrMap` object.
+    If the object is read only, then return False, and vice versa.
+    """
     return not is_read_only(am)
 
 
-def convert_to_dict(am: AttrMap) -> Dict:
-    return todict(am)
-
-
-def to_dict(am: AttrMap) -> Dict:
-    return todict(am)
-
-
 def todict(am: AttrMap) -> Dict:
+    """
+    Convert to a python builtin dict, which does not
+    share memory with AttrMap instance.
+    The state (is read-only or not) will not influence this method.
+    For example:
+
+    >>> configs = AttrMap(CONFIGS)
+    >>> configs_dict = todict(configs)
+    >>> print(configs_dict)
+    {'attr1': 1, 'attr2': ['hello', ' ', 'world'],
+    'attr3': {'subattr1': 'subattr1',
+    'subattr2': {'subsubattr1': 'subsubattr1'}}}
+    >>> print(type(configs_dict))
+    <class 'dict'>
+    # AttrMap object doesn't store the original dict.
+    >>> print(id(configs_dict))
+    139881853477376
+    >>> print(id(CONFIGS))
+    139881853478464
+    # But it do not change the items:
+    >>> print(configs_dict == CONFIGS)
+    True
+    """
     result = {}
     _prefix = _get_prefix(am)
     for key, value in am.__dict__.items():
@@ -49,7 +113,23 @@ def todict(am: AttrMap) -> Dict:
     return result
 
 
+convert_to_dict = todict
+to_dict = todict
+
+
 def convert_state(am: AttrMap, read_only: bool) -> AttrMap:
+    """
+    Convert the state as read only or not.
+
+    This method will return the self object,
+    so the both two code snipts are equivalent:
+
+    >>> configs = AttrMap(CONFIGS)
+    >>> convert_state(configs, True)
+    >>> configs_new = convert_state(configs, True)
+    >>> id(configs) == id(configs_new)
+    True
+    """
     if read_only not in [True, False]:
         raise ValueError(
             f"Expect attribute read_only takes value "
@@ -62,10 +142,14 @@ def convert_state(am: AttrMap, read_only: bool) -> AttrMap:
 
 
 def convert_to_read_only(am: AttrMap) -> AttrMap:
+    """
+    Convert the statue to read only.
+    """
     return convert_state(am, True)
 
 
 def convert_to_modifiable(am: AttrMap) -> AttrMap:
+    """Convert the state to modifiable."""
     return convert_state(am, False)
 
 
@@ -73,6 +157,49 @@ def merge_from(
         am: AttrMap,
         mapping: AttrMap = None,
         path2file: os.PathLike = None) -> AttrMap:
+    """
+    Merge from a file (json or yaml) or a mappable object (dict or AttrMap).
+
+    .. NOTE:: The existing value will be overwrited.
+
+    Args:
+        am:
+            AttrMap object, key-value pairs of other object
+            will be merged in it.
+        mapping:
+            An instance of dict or AttrMap.
+        path2file:
+            The path to the json or yaml file.
+
+    Returns:
+        The merged object, shares id with input am.
+
+    >>> configs = AttrMap(CONFIGS)
+    >>> print(configs)
+    Object Contains Following Attributes
+    attr1: 1
+    attr2: ['hello', ' ', 'world']
+    attr3:
+            subattr1: subattr1
+            subattr2:
+                    subsubattr1: subsubattr1
+    >>> id(configs)
+    140416566573808
+    >>> configs_new = merge_from(configs, {'attr4': 'attr4'})
+    >>> print(configs)
+    Object Contains Following Attributes
+    attr1: 1
+    attr2: ['hello', ' ', 'world']
+    attr3:
+            subattr1: subattr1
+            subattr2:
+                    subsubattr1: subsubattr1
+    attr4: attr4
+    >>> id(configs_new) == id(configs)
+    True
+    >>> configs is configs_new
+    True
+    """
     if is_read_only(am):
         raise AttributeError("Cannot merge to a read only AttrMap object.")
     if mapping is not None:
@@ -89,6 +216,24 @@ def merge_from(
 
 
 def get_keys(am: AttrMap) -> List:
+    """
+    Get the (top level) keys of `AttrMap` object.
+
+    Returns:
+        keys: A list of keys.
+
+    >>> configs = AttrMap(CONFIGS)
+    >>> get_keys(configs)
+    ['attr1', 'attr2', 'attr3']
+    >>> type(configs.keys())
+    <class 'list'>
+
+    That is, only the top-level attribute names will be returned.
+    Similarily:
+
+    >>> get_keys(configs['attr3']) # equivalent to get_keys(configs.attr3)
+    ['subattr1', 'subattr2']
+    """
     _prefix = _get_prefix(am)
     keys = filter(
         lambda x: x.startswith(_prefix), am.__dict__.keys()
@@ -97,28 +242,29 @@ def get_keys(am: AttrMap) -> List:
     return list(keys)
 
 
-def get_values(am: AttrMap) -> List:
-    return get_vals(am)
-
-
 def get_vals(am: AttrMap) -> List:
     """
-    Get the (top level) `key-value` pair of `AttrMap` object like `dict`.
+    Get the (top level) values of `AttrMap` object.
+    The alias of `values` is `vals`.
 
     Returns:
-        items: zip object.
+        values: A list of values.
 
-    >>> configs = AttrMap(CONFIGS)
-    >>> configs.items()
-    <zip object at 0x7fdaf3843a80>
-    >>> for key, val in configs.items():
-    ...     print(key, val)
-    ... # End of for loop.
-    attr1 1
-    attr2 ['hello', ' ', 'world']
-    attr3   subattr1: subattr1
-            subattr2:
-                    subsubattr1: subsubattr1
+    >>> values = get_vals(configs)
+    >>> print(type(values))
+    <class 'list'>
+    >>> print(values)
+    [1, ['hello', ' ', 'world'],     subattr1: subattr1
+        subattr2:
+                subsubattr1: subsubattr1, ]
+    >>> type(values[0])
+    <class 'int'>
+    >>> type(values[1])
+    <class 'list'>
+    >>> type(values[2])
+    <class 'attrmap.attrmap.AttrMap'>
+    >>> type(values[3])
+    <class 'attrmap.attrmap.AttrMap'>
 
     .. NOTE:: If the returned value is modified by user,
         the original AttrMap object may be modified too.
@@ -130,11 +276,44 @@ def get_vals(am: AttrMap) -> List:
     return values
 
 
+get_values = get_vals
+
+
 def get_items(am: AttrMap) -> Iterable:
+    """
+    Get the (top level) `key-value` pair of `AttrMap` object like `dict`.
+
+    Returns:
+        items: zip object.
+
+    >>> configs = AttrMap(CONFIGS)
+    >>> get_items(configs)
+    <zip object at 0x7fdaf3843a80>
+    >>> for key, val in get_items(configs):
+    ...     print(key, val)
+    ... # End of for loop.
+    attr1 1
+    attr2 ['hello', ' ', 'world']
+    attr3   subattr1: subattr1
+            subattr2:
+                    subsubattr1: subsubattr1
+    """
     return zip(get_keys(am), get_vals(am))
 
 
 def contains(am: AttrMap, key: str) -> bool:
+    """
+    Check if `AttrMap` contains specific attribute.
+
+    >>> configs = AttrMap(CONFIGS)
+    >>> for obj in configs:
+    ...     print(obj)
+    ... # End of for loop.
+    ('attr1', 1)
+    ('attr2', ['hello', ' ', 'world'])
+    ('attr3', {'subattr1': 'subattr1', \
+        'subattr2': {'subsubattr1': 'subsubattr1'}})
+    """
     return key in am
 
 
