@@ -10,7 +10,7 @@ Welcome to attrmap's documentation!
    :maxdepth: 2
    :caption: API Reference
 
-   modules.rst
+   attrmap.rst
 
 Indices and tables
 ==================
