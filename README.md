@@ -5,7 +5,7 @@
 
 ## Introduction
 
-`attrmap` maps the `dict` to an object of `AttrMap`, so users can avoid using the annoying `[""]` syntax. 
+`attrmap` maps the `dict` to an object of `AttrMap`, so users can avoid using the annoying `[""]` syntax.
 
 Users are welcome to report issues or request new features.
 
@@ -13,9 +13,10 @@ The API references can be found [here](https://attrmap.readthedocs.io/en/latest/
 
 ## What's New
 
+- 2022-12-20: Fix the annoying warning when creating an AttrMap instance.
 - 2022-08-27: Add utilities for AttrMap, see [docs](https://attrmap.readthedocs.io/en/latest/index.html).
 - 2022-08-27: Add deprecated warnings.
-- 2022-08-13: Fix the `delattr` bug, you can delete an item via `del obj.attr` when `AttrMap` object is modifiable.
+- 2022-08-13: Fix the `delattr` bug, users can delete an item via `del obj.attr` when the `AttrMap` object is modifiable.
 - 2022-08-13: Fix the improper use of type hint, now `attrmap` is available for python>=3.6.
 - 2022-08-13: Update the document.
 
@@ -33,6 +34,7 @@ Assuming you have an instance of `dict`, then you can build an object of `AttrMa
 
 ```python
 from attrmap import AttrMap
+import attrmap.utils as au
 
 CONFIGS = {
     "attr1": 1, 
@@ -48,9 +50,9 @@ CONFIGS = {
 configs = AttrMap(CONFIGS)
 
 # Set the object unmodifiable.
-configs = configs.convert_state(read_only=True)
+configs = au.convert_state(configs, read_only=True)
 # Equivalent to:
-# configs.convert_state(read_only=True)
+# au.convert_state(configs, read_only=True)
 
 print(configs) # The outputs is more human readable.
 # Object Contains Following Attributes
@@ -71,7 +73,7 @@ configs = AttrMap()
 configs.attr1 = 1
 configs.attr2 = ["hello", " ", "world"]
 configs.attr3.subattr1 = "subattr1"
-configs.attr3.subattr2.subsubattr2 = "subsubattr1"
+configs.attr3.subattr2.subsubattr1 = "subsubattr1"
 
 print(configs)
 # Object Contains Following Attributes
@@ -86,7 +88,7 @@ print(configs)
 You can convert the `AttrMap` object to Python `dict` anytime:
 
 ```python
-configs_dict = configs.todict()
+configs_dict = au.todict(configs)
 
 print(configs_dict)
 # {'attr1': 1, 'attr2': ['hello', ' ', 'world'], 'attr3': {'subattr1': 'subattr1', 'subattr2': {'subsubattr1': 'subsubattr1'}}}
@@ -110,30 +112,34 @@ print(configs_dict == CONFIGS)
 ```python
 # Assume you have the above AttrMap object named configs
 # Now set the AttrMap object as read-only.
-configs = configs.convert_state(read_only=True)
+configs = au.convert_state(configs, read_only=True)
 
 # Try to create a new attribute.
 configs.attr4 = "unintentional modification"
 # Traceback (most recent call last):
 #   File "<stdin>", line 1, in <module>
-#   File "/xxxx/attrmap.py", line xxx, in __setattr__
+#   File "/xxxx/attrmap.py", line 558, in __setattr__
+#     self._check_modifiable()
+#   File "/xxxx/attrmap.py", line 643, in _check_modifiable
 #     raise AttributeError(
-# AttributeError: A read only AttrMap instance is not allowed to modify its attribute.
+# AttributeError: Modifying the attributes of a read-only AttrMap instance is not allowed.
 
 # Try to modify the value of existing attribute:
 configs.attr1 = "unintentional modification"
 # Traceback (most recent call last):
 #   File "<stdin>", line 1, in <module>
-#   File "/xxxxx/attrmap.py", line xxx, in __setattr__
+#   File "/xxxx/attrmap.py", line 558, in __setattr__
+#     self._check_modifiable()
+#   File "/xxxx/attrmap.py", line 643, in _check_modifiable
 #     raise AttributeError(
-# AttributeError: A read only AttrMap instance is not allowed to modify its attribute.
+# AttributeError: Modifying the attributes of a read-only AttrMap instance is not allowed.
 ```
 
-The `read-only` protection is quite useful when you use `AttrMap` object to store the configuration of any system, any unintentional modification is not allowed. If you want to update the value of attribute, just set the `read_only` of `AttrMap` instance as `False` via `.convert_state(read_only=False)`. 
+The `read-only` protection is quite useful when you use the `AttrMap` object to store the configuration of any system, any unintentional modification is not allowed. If you want to update the attribute's value, just set the `read_only` of the `AttrMap` instance as `False` via `au.convert_state(obj, read_only=False)`.
 
-If the `AttrMap` object should be unmodifiable, set the object as **read only** is recommended.
+If the `AttrMap` object should be unmodifiable, setting the object as **read-only** is recommended.
 
-You can also build a `AttrMap` instance from a `.json` or `.yaml` file. For example, assume you have an `file.json` file:
+You can also build an `AttrMap` instance from a `.json` or `.yaml` file. For example, assume you have a `file.json` file:
 
 ```json
 {
