@@ -70,11 +70,11 @@ def test_merge_from():
 def test_read_only():
     configs = AttrMap(CONFIGS)
     convert_state(configs, True)
-    assert configs.readonly is is_read_only(configs)
-    assert configs.readonly is not is_modifiable(configs)
+    assert configs.__dict__["READ_ONLY"] is is_read_only(configs)
+    assert configs.__dict__["READ_ONLY"] is not is_modifiable(configs)
     try:
         configs.attr1 = "hello world"
-        assert False, configs.readonly
+        assert False, configs.__dict__["READ_ONLY"]
     except AttributeError:
         pass
 

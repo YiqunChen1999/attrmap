@@ -1,5 +1,6 @@
 
 from attrmap import AttrMap
+import attrmap.utils as au
 from copy import deepcopy as dcp
 import pytest
 
@@ -40,22 +41,22 @@ def test_merge_from():
     cfg_yaml = AttrMap(
         path2file=__file__.replace("test_attrmap.py", "test.yaml")
     )
-    assert "language" in cfg_yaml.keys(), cfg_yaml.keys()
+    assert "language" in au.get_keys(cfg_yaml), au.get_keys(cfg_yaml)
     configs = AttrMap(dcp(CONFIGS))
-    configs.merge_from(cfg_yaml)
+    configs = au.merge_from_mapping(configs, cfg_yaml)
     for key in list(CONFIGS.keys()):
-        assert key in configs.keys(), configs.keys()
-    for key in cfg_yaml.keys():
-        assert key in configs.keys(), configs.keys()
+        assert key in au.get_keys(configs), au.get_keys(configs)
+    for key in au.get_keys(cfg_yaml):
+        assert key in au.get_keys(configs), au.get_keys(configs)
 
 
 def test_read_only():
     configs = AttrMap(CONFIGS)
-    configs.convert_state(True)
-    assert configs.readonly
+    au.convert_state(configs, read_only=True)
+    assert au.is_read_only(configs)
     try:
         configs.attr1 = "hello world"
-        assert False, configs.readonly
+        assert False, au.is_read_only(configs)
     except AttributeError:
         pass
 
@@ -76,7 +77,7 @@ def test_str():
 def test_contains():
     configs = AttrMap(CONFIGS)
     for key in CONFIGS.keys():
-        assert configs.contains(key), key
+        assert au.contains(configs, key), key
 
 
 def test_getitem():
@@ -84,43 +85,43 @@ def test_getitem():
     for key in CONFIGS.keys():
         val = configs[key]
         if isinstance(val, AttrMap):
-            val = val.todict()
+            val = au.todict(val)
         assert val == CONFIGS[key], val
 
 
 def test_keys():
     configs = AttrMap(CONFIGS)
-    assert sorted(configs.keys()) == sorted(list(CONFIGS.keys())),\
-        configs.keys()
+    assert sorted(au.get_keys(configs)) == sorted(list(CONFIGS.keys())),\
+        au.get_keys(configs)
 
 
 def test_vals():
     configs = AttrMap(CONFIGS)
-    attr_vals = configs.values()
+    attr_vals = au.get_vals(configs)
     dict_vals = CONFIGS.values()
     for attr_val, dict_val in zip(attr_vals, dict_vals):
         if isinstance(attr_val, AttrMap):
-            attr_val = attr_val.todict()
+            attr_val = au.todict(attr_val)
         assert attr_val == dict_val, attr_val
 
 
 def test_items():
     configs = AttrMap(CONFIGS)
-    attr_items = configs.items()
+    attr_items = au.get_items(configs)
     dict_items = CONFIGS.items()
     # dict_items = list(dict_items)
     for attr_it, dict_it in zip(attr_items, dict_items):
         assert attr_it[0] == dict_it[0], attr_it[0]
         val = attr_it[1]
         if isinstance(val, AttrMap):
-            val = val.todict()
+            val = au.todict(val)
         assert val == dict_it[1], attr_it[1]
 
 
 def test_delete_item():
     configs = AttrMap(CONFIGS)
 
-    configs.convert_state(read_only=True)
+    au.convert_state(configs, read_only=True)
     with pytest.raises(AttributeError):
         del configs.attr1
     assert hasattr(configs, "attr1")
@@ -133,15 +134,15 @@ def test_delete_item():
         del configs.attr3.subattr1
     assert hasattr(configs.attr3, "subattr1")
 
-    configs.convert_state(read_only=False)
+    au.convert_state(configs, read_only=False)
     del configs.attr1
-    configs.convert_state(read_only=True)
+    au.convert_state(configs, read_only=True)
     assert not hasattr(configs, "attr1")
-    configs.convert_state(read_only=False)
+    au.convert_state(configs, read_only=False)
     del configs.attr3.subattr2.subsubattr1
-    configs.convert_state(read_only=True)
+    au.convert_state(configs, read_only=True)
     assert not hasattr(configs.attr3.subattr2, "subsubattr1")
-    configs.convert_state(read_only=False)
+    au.convert_state(configs, read_only=False)
     del configs.attr3["subattr1"]
-    configs.convert_state(read_only=True)
+    au.convert_state(configs, read_only=True)
     assert not hasattr(configs.attr3, "subattr1")
