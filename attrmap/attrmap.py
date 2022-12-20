@@ -192,9 +192,8 @@ class AttrMap(object):
     >>> configs["readonly"]
     'unintentional modification'
 
-    .. Warning:: Set the name of attributes be the same with any python magic
-        method is discouraged, even if they can be accessed via dict-style
-        accessing.
+    .. Warning:: Set the name of attributes to be the same as any python magic
+        the method is discouraged, even if it can be accessed via dict-style.
 
     .. Warning:: The attribute start with `_` might be conflict with `AttrMap`
         reserved methods. If it's, your can access their values in dict-style.
@@ -567,7 +566,8 @@ class AttrMap(object):
 
     def __getattr__(self, key: str) -> Any:
         if not self._wrap_name(key) in self.__dict__.keys():
-            if self.read_only:
+            import attrmap.utils as au
+            if au.is_read_only(self):
                 raise AttributeError("No such attribute: {}".format(key))
             self.__dict__[self._wrap_name(key)] = AttrMap()
             self._update_level()
@@ -640,8 +640,8 @@ class AttrMap(object):
         import attrmap.utils as au
         if au.is_read_only(self):
             raise AttributeError(
-                f"A read only AttrMap instance "
-                f"is not allowed to modify its attribute."
+                f"Modifying the attributes of a read-only AttrMap instance is "
+                f"not allowed."
             )
 
     def _reserved_warning(self, key: str):
