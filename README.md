@@ -124,7 +124,7 @@ configs.attr4 = "unintentional modification"
 #     raise AttributeError(
 # AttributeError: Modifying the attributes of a read-only AttrMap instance is not allowed.
 
-# Try to modify the value of existing attribute:
+# Try to modify the value of an existing attribute:
 configs.attr1 = "unintentional modification"
 # Traceback (most recent call last):
 #   File "<stdin>", line 1, in <module>
@@ -169,9 +169,10 @@ print(configs)
 
 ## Known Issues
 
-- Attributes start with `_` might be conflict with `AttrMap` perserved methods/properties. Attributes can still be accessed via dict-style (`[""]`), but the attribute-style
+- The API reference is missing, I will try to fix it in the next few days.
+- Attributes starting with `_` might be conflict with `AttrMap` preserved methods/properties. Attributes can still be accessed via dict-style (`[""]`), but the attribute-style
 will return the "protected" (not the term of python, only means it's not "public") method such as `_build_from_dict`.
-- Some public available properties and methods are reserved, they can only accessed via the dict-style.
+- Some publicly available properties and methods are reserved, they can only accessed via the dict-style.
 
 ## Running Tests
 
@@ -186,6 +187,9 @@ bash -i ./auto_test.sh
 See [The API Reference](https://attrmap.readthedocs.io/en/latest/modules.html)
 
 ## TODO
+
+- [ ] Put the package on conda. ([Issue #3](https://github.com/YiqunChen1999/attrmap/issues/3))
+- [ ] Fix missing API reference problem.
 
 ## LICENSE
 
