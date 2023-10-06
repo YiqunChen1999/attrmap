@@ -10,7 +10,7 @@ import os
 import sys
 import sphinx_rtd_theme
 CURR_DIR = os.path.abspath(os.path.dirname(__file__))
-# sys.path.append('../attrmap')
+sys.path.append(os.path.join(CURR_DIR, '..'))
 sys.path.append(os.path.join(CURR_DIR, '../attrmap'))
 sys.path.append(CURR_DIR)
 
