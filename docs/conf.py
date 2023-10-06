@@ -25,6 +25,7 @@ extensions = [
     'recommonmark',
     # 'sphinx_markdown_tables',
     'sphinx.ext.autodoc',
+    'sphinx_rtd_theme',
  ]
 # source_suffix = '.md'
 templates_path = ['_templates']
