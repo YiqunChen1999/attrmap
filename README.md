@@ -13,6 +13,8 @@ The API references can be found [here](https://attrmap.readthedocs.io/en/latest/
 
 ## What's New
 
+- 2023-10-06: Put the package on conda-forge ([Issue #3](https://github.com/YiqunChen1999/attrmap/issues/3)).
+- 2023-10-06: Fix the missing docs problem.
 - 2022-12-20: Fix the annoying warning when creating an AttrMap instance.
 - 2022-08-27: Add utilities for AttrMap, see [docs](https://attrmap.readthedocs.io/en/latest/index.html).
 - 2022-08-27: Add deprecated warnings.
@@ -187,9 +189,6 @@ bash -i ./auto_test.sh
 See [The API Reference](https://attrmap.readthedocs.io/en/latest/modules.html)
 
 ## TODO
-
-- [ ] Put the package on conda. ([Issue #3](https://github.com/YiqunChen1999/attrmap/issues/3))
-- [ ] Fix missing API reference problem.
 
 ## LICENSE
 
